@@ -255,22 +255,30 @@ export class ExportService {
 
   /**
    * Download file with given content and filename
-   * @param {string} content - File content
+   * @param {string} content - File content or data URL
    * @param {string} filename - Name of the file to save
    * @param {string} mimeType - MIME type of the file
    */
   static downloadFile(content, filename, mimeType) {
+    // If content is a data URL (for images), download directly
+    if (typeof content === 'string' && content.startsWith('data:')) {
+      const link = document.createElement('a');
+      link.href = content;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
+    }
+    // Otherwise, treat as text/blob
     const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
-    
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
-    // Clean up
     URL.revokeObjectURL(url);
   }
 } 
