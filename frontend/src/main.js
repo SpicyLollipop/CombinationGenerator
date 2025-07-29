@@ -3,8 +3,8 @@ import { createPinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
 import './style.css'
-import FoodFestivalPlanner from './components/FoodFestivalPlanner.vue'
-import ResultPage from './components/ResultPage.vue'
+import FoodFestivalPlanner from './view/FoodFestivalPlanner.vue'
+import ResultPage from './view/ResultPage.vue'
 
 const routes = [
   { path: '/', component: FoodFestivalPlanner },

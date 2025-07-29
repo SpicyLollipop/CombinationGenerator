@@ -91,7 +91,6 @@ export class ExportService {
     
     // Add title
     textLines.push('3-Wise Combinations Report');
-    textLines.push('='.repeat(30));
     textLines.push(`Total combinations: ${combinations.length}`);
     textLines.push('');
     

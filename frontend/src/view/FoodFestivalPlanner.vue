@@ -86,13 +86,15 @@
     <div class="generate-row">
       <button class="generate" type="button" @click="handleGenerate">Generate</button>
     </div>
+    <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCombinationStore } from '../store/combinationStore'
+import { getParameters, saveParameters } from '../config/api'
 
 const parameter = ref('')
 const values = ref([''])
@@ -132,6 +134,7 @@ const saveEdit = (idx) => {
     values: editForm.values.map(v => v.trim())
   }
   cancelEdit()
+  updateCookie()
 }
 
 const addEditValue = () => {
@@ -178,12 +181,34 @@ const handleSubmit = () => {
     errors.parameter = ''
     errors.values = {}
     errors.valuesGeneral = ''
+    updateCookie()
   }
 }
 
 const addValue = () => {
   values.value.push('')
 }
+
+const updateCookie = () => {
+  const parameters = savedParameters.value.map(item => item.parameter)
+  const values = savedParameters.value.map(item => item.values)
+  saveParameters(parameters, values)
+}
+
+onMounted(async () => {
+  try {
+    const res = await getParameters();
+    if (res.data && res.data.data && Array.isArray(res.data.data.parameters) && Array.isArray(res.data.data.values)) {
+      // Reconstruct savedParameters from cookie data
+      savedParameters.value = res.data.data.parameters.map((param, idx) => ({
+        parameter: param,
+        values: res.data.data.values[idx] || []
+      }));
+    }
+  } catch (e) {
+    // Optionally handle error
+  }
+})
 
 function getAll3WiseCombinations(params) {
   // params: [{ parameter: 'A', values: ['a1', 'a2'] }, ...]
@@ -281,10 +306,32 @@ function getAll3WiseCombinations(params) {
   return generate3WayCoveringArray(params);
 }
 
+const errorMessage = ref('')
+
 const handleGenerate = () => {
-  const combinations = getAll3WiseCombinations(savedParameters.value)
-  combinationStore.setCombinations(combinations)
-  router.push({ name: 'ResultPage' })
+  let errors = [];
+  if (savedParameters.value.length < 3) {
+    errors.push('At least 3 parameters are required to generate combinations.');
+  }
+  // Check for empty parameter names or values
+  savedParameters.value.forEach((param, idx) => {
+    if (!param.parameter || !param.parameter.trim()) {
+      errors.push(`Parameter name at position ${idx + 1} is required.`);
+    }
+    if (!param.values || param.values.length < 2) {
+      errors.push(`Parameter "${param.parameter || '(unnamed)'}" must have at least 2 values.`);
+    } else if (param.values.some(v => !v || !v.trim())) {
+      errors.push(`All values for parameter "${param.parameter || '(unnamed)'}" are required.`);
+    }
+  });
+  if (errors.length > 0) {
+    errorMessage.value = errors.join(' ');
+    return;
+  }
+  errorMessage.value = '';
+  const combinations = getAll3WiseCombinations(savedParameters.value);
+  combinationStore.setCombinations(combinations);
+  router.push({ name: 'ResultPage' });
 }
 </script>
 
@@ -403,7 +450,7 @@ const handleGenerate = () => {
 .error-message {
   color: #ff4444;
   font-size: 0.9rem;
-  margin-top: -5px;
+  margin-top: 5px;
   margin-bottom: 10px;
   text-align: left;
   display: block;

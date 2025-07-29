@@ -63,7 +63,7 @@
 import { computed, ref } from 'vue'
 import { useCombinationStore } from '../store/combinationStore'
 import { ExportService } from '../services/exportService'
-import Header from './Header.vue'
+import Header from '../components/Header.vue'
 
 const combinationStore = useCombinationStore()
 const combinations = computed(() => combinationStore.combinations)

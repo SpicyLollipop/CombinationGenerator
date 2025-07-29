@@ -9,4 +9,10 @@ const api = axios.create({
     withCredentials: true
 });
 
+export const saveParameters = (parameters, values) =>
+    api.post('/save-parameters', { parameters, values });
+
+export const getParameters = () =>
+    api.get('/get-parameters');
+
 export default api; 
