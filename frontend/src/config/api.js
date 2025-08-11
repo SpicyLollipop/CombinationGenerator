@@ -15,4 +15,7 @@ export const saveParameters = (parameters, values) =>
 export const getParameters = () =>
     api.get('/get-parameters');
 
+export const getParameterValues = (id) =>
+    api.get(`/parameters/${id}`);
+
 export default api; 

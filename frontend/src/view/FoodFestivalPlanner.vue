@@ -4,84 +4,64 @@
     <div style="display: flex; gap: 40px; justify-content: center; width: 100%;">
       <div class="form-box">
         <form @submit.prevent="handleSubmit">
-          <label class="label" for="parameter">Parameter:</label>
-          <input 
-            class="input" 
-            :class="{ 'error': errors.parameter }"
-            id="parameter" 
-            type="text" 
-            v-model="parameter" 
-          />
-          <span v-if="errors.parameter" class="error-message">{{ errors.parameter }}</span>
+          <label class="label">Event:</label>
+          <div class="input-text">Food Festival</div>
 
-          <label class="label" for="value-0">Value:</label>
-          <input 
-            class="input" 
-            :class="{ 'error': errors.values[0] }"
-            id="value-0" 
-            type="text" 
-            v-model="values[0]" 
-          />
-          <span v-if="errors.values[0]" class="error-message">{{ errors.values[0] }}</span>
-
-          <template v-for="(value, index) in values.slice(1)" :key="index + 1">
-            <input 
-              class="input" 
-              :class="{ 'error': errors.values[index + 1] }"
-              :id="'value-' + (index + 1)" 
-              type="text" 
-              v-model="values[index + 1]" 
-            />
-            <span v-if="errors.values[index + 1]" class="error-message">{{ errors.values[index + 1] }}</span>
-          </template>
-
-          <span v-if="errors.valuesGeneral" class="error-message">{{ errors.valuesGeneral }}</span>
-
-          <div class="add-more-row">
-            <button class="add-more" type="button" @click="addValue">Add More</button>
-          </div>
+          <label class="label">Parameter:</label>
+          <select v-model="selectedParameter" class="input" @change="handleParameterChange">
+            <option value="" disabled selected>Select a parameter</option>
+            <option value="total_vendor">Total Vendor</option>
+            <option value="cuisene_type">Cuisene Type</option>
+            <option value="main_ingredient">Main Ingredient</option>
+          </select>
         </form>
 
         <div class="save-row">
           <button class="save" type="button" @click="handleSubmit">Save</button>
         </div>
       </div>
-      <template v-if="savedParameters.length > 0">
-        <div class="form-box" style="min-height: 250px; display: flex; align-items: flex-start; justify-content: center;">
-          <div>
-            <div v-for="(item, idx) in savedParameters" :key="idx" style="margin-bottom: 12px;">
-              <template v-if="editingIndex === idx">
-                <input class="input" v-model="editForm.parameter" style="margin-bottom: 6px;" />
-                <div v-for="(val, vIdx) in editForm.values" :key="vIdx" style="display: flex; align-items: center; margin-bottom: 4px;">
-                  <input class="input" v-model="editForm.values[vIdx]" style="width: 200px; margin-right: 8px;" />
-                  <template v-if="vIdx === editForm.values.length - 1">
-                    <button class="icon-btn plus-btn" type="button" @click="addEditValue">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <circle cx="12" cy="12" r="10" stroke="#444" stroke-width="2"/>
-                        <line x1="12" y1="8" x2="12" y2="16" stroke="#444" stroke-width="2" stroke-linecap="round"/>
-                        <line x1="8" y1="12" x2="16" y2="12" stroke="#444" stroke-width="2" stroke-linecap="round"/>
-                      </svg>
-                    </button>
-                  </template>
+
+      <div v-if="displayedParameters.length > 0" class="form-box parameters-display">
+        <div class="values-display">
+          <div v-for="(param, idx) in displayedParameters" :key="idx" class="value-row">
+            <template v-if="editingIndex === idx">
+              <div class="edit-form">
+                <input 
+                  v-model="editForm.parameterName"
+                  class="input edit-input"
+                  placeholder="Parameter name"
+                />
+                <div v-for="(value, vIdx) in editForm.values" :key="vIdx" class="edit-value-row">
+                  <input 
+                    v-model="editForm.values[vIdx]"
+                    class="input edit-input"
+                    placeholder="Value"
+                  />
+                  <button @click="removeValue(vIdx)" class="icon-btn" v-if="editForm.values.length > 1">
+                    <span class="delete-icon">×</span>
+                  </button>
                 </div>
-                <div style="margin-top: 8px;">
-                  <button class="save" type="button" @click="saveEdit(idx)">Save</button>
-                  <button class="add-more" type="button" @click="cancelEdit" style="margin-left: 8px;">Cancel</button>
+                <div class="edit-actions">
+                  <button @click="addValue" class="add-btn">+ Add Value</button>
+                  <div>
+                    <button @click="saveEdit" class="save-btn">Save</button>
+                    <button @click="cancelEdit" class="cancel-btn">Cancel</button>
+                  </div>
                 </div>
-              </template>
-              <template v-else>
-                <span><b>{{ item.parameter }}:</b> {{ item.values.join(', ') }}</span>
-                <button class="icon-btn" type="button" @click="startEdit(idx)" style="margin-left: 12px;">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <rect x="3" y="3" width="18" height="18" rx="2" stroke="#444" stroke-width="1.5"/>
-                    <path d="M8 16.5V16.5C8 16.5 8.5 14.5 10 13L15.5 7.5C15.7761 7.22386 16.2239 7.22386 16.5 7.5V7.5C16.7761 7.77614 16.7761 8.22386 16.5 8.5L11 14C9.5 15.5 7.5 16 7.5 16H7.5C7.5 16 7.5 16.5 8 16.5Z" stroke="#444" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
+              </div>
+            </template>
+            <template v-else>
+              <div class="value-item">
+                {{ selectedParameterNames[idx] }}: {{ param.values.join(', ') }}
+                <button @click="startEdit(idx)" class="edit-btn">
+                  <span class="edit-icon">✎</span>
                 </button>
-              </template>
-            </div>
+              </div>
+            </template>
           </div>
         </div>
-      </template>
+      </div>
+
     </div>
     <div class="generate-row">
       <button class="generate" type="button" @click="handleGenerate">Generate</button>
@@ -91,124 +71,168 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, onMounted, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCombinationStore } from '../store/combinationStore'
-import { getParameters, saveParameters } from '../config/api'
+import { getParameterValues } from '../config/api'
 
-const parameter = ref('')
-const values = ref([''])
-const errors = reactive({
-  parameter: '',
-  values: {},
-  valuesGeneral: ''
-})
-const savedParameters = ref([])
+const selectedParameter = ref('')
 const router = useRouter()
 const combinationStore = useCombinationStore()
-
-// Edit state
+const displayedParameters = ref([])
+const currentValues = ref([])
+const selectedParameterNames = ref([])
+const errorMessage = ref('')
 const editingIndex = ref(null)
 const editForm = reactive({
-  parameter: '',
+  parameterName: '',
   values: []
 })
 
+const parameterMapping = {
+  'total_vendor': 1,    // ID for total vendor parameter
+  'cuisene_type': 2,    // ID for cuisine type parameter
+  'main_ingredient': 3  // ID for main ingredient parameter
+}
+
+const handleParameterChange = async () => {
+  try {
+    // Clear any existing error message when parameter changes
+    errorMessage.value = '';
+    
+    const paramId = parameterMapping[selectedParameter.value];
+    const response = await getParameterValues(paramId);
+    console.log('API Response:', response.data);
+    
+    if (response.data && response.data.data && response.data.data.values) {
+      if (selectedParameter.value === 'total_vendor') {
+        // For total_vendor, parse as numbers
+        currentValues.value = response.data.data.values.map(item => {
+          const num = parseInt(item.value);
+          return isNaN(num) ? item.value : num;
+        });
+      } else {
+        // For other parameters, use strings
+        currentValues.value = response.data.data.values.map(item => item.value);
+      }
+      console.log('Processed values:', currentValues.value);
+    }
+  } catch (error) {
+    console.error('Error fetching parameter values:', error);
+    errorMessage.value = 'Error loading parameter values. Please try again.';
+  }
+}
+
+const handleSubmit = async () => {
+  if (!selectedParameter.value || currentValues.value.length === 0) {
+    errorMessage.value = 'Please select a parameter and ensure it has values.';
+    return;
+  }
+
+  // Convert parameter key to display name
+  const displayName = selectedParameter.value
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+
+  // Check if this parameter has already been saved
+  if (selectedParameterNames.value.includes(displayName)) {
+    errorMessage.value = `${displayName} has already been saved. Please select a different parameter.`;
+    return;
+  }
+
+  // Clear any existing error message
+  errorMessage.value = '';
+
+  // Store both parameter name and values
+  displayedParameters.value.push({
+    values: [...currentValues.value]
+  });
+  selectedParameterNames.value.push(displayName);
+}
+
 const startEdit = (idx) => {
-  editingIndex.value = idx
-  editForm.parameter = savedParameters.value[idx].parameter
-  editForm.values = [...savedParameters.value[idx].values]
+  editingIndex.value = idx;
+  editForm.parameterName = selectedParameterNames.value[idx];
+  editForm.values = [...displayedParameters.value[idx].values];
 }
 
 const cancelEdit = () => {
-  editingIndex.value = null
-  editForm.parameter = ''
-  editForm.values = []
+  editingIndex.value = null;
+  editForm.parameterName = '';
+  editForm.values = [];
+  errorMessage.value = '';
 }
 
-const saveEdit = (idx) => {
-  if (!editForm.parameter.trim()) return
-  if (editForm.values.filter(v => v.trim()).length < 2) return
-  savedParameters.value[idx] = {
-    parameter: editForm.parameter.trim(),
-    values: editForm.values.map(v => v.trim())
-  }
-  cancelEdit()
-  updateCookie()
-}
-
-const addEditValue = () => {
-  editForm.values.push('')
-}
-
-const validateForm = () => {
-  let isValid = true
-  errors.parameter = ''
-  errors.values = {}
-  errors.valuesGeneral = ''
-
-  if (!parameter.value.trim()) {
-    errors.parameter = 'Parameter is required'
-    isValid = false
+const saveEdit = () => {
+  // First check if we have a valid editing index
+  if (editingIndex.value === null) {
+    errorMessage.value = 'No parameter is being edited';
+    return;
   }
 
-  let nonEmptyCount = 0
-  values.value.forEach((value, index) => {
-    if (!value.trim()) {
-      errors.values[index] = 'Value is required'
-      isValid = false
-    } else {
-      nonEmptyCount++
+  // Validate parameter name
+  if (!editForm.parameterName.trim()) {
+    errorMessage.value = 'Parameter name is required';
+    return;
+  }
+
+  // Validate values
+  if (!editForm.values || editForm.values.length === 0) {
+    errorMessage.value = 'At least one value is required';
+    return;
+  }
+
+  // Handle validation for total vendor (numbers) vs other parameters (strings)
+  const isNumber = selectedParameterNames.value[editingIndex.value].toLowerCase().includes('vendor');
+  const validValues = editForm.values.filter(v => {
+    if (isNumber) {
+      const num = parseFloat(v);
+      return !isNaN(num) && num.toString() === v.toString().trim();
     }
-  })
+    return v.trim().length > 0;
+  });
 
-  if (nonEmptyCount < 2) {
-    errors.valuesGeneral = 'At least two values are required.'
-    isValid = false
+  if (validValues.length !== editForm.values.length) {
+    errorMessage.value = isNumber ? 
+      'All values must be valid numbers' : 
+      'All values must not be empty';
+    return;
   }
 
-  return isValid
-}
+  // Process the values based on the parameter type
+  const processedValues = editForm.values.map(v => {
+    if (isNumber) {
+      return parseFloat(v);
+    }
+    return v.trim();
+  });
 
-const handleSubmit = () => {
-  if (validateForm()) {
-    savedParameters.value.push({
-      parameter: parameter.value,
-      values: values.value.map(v => v.trim())
-    })
-    parameter.value = ''
-    values.value = ['']
-    errors.parameter = ''
-    errors.values = {}
-    errors.valuesGeneral = ''
-    updateCookie()
+  try {
+    // Update the parameter
+    selectedParameterNames.value[editingIndex.value] = editForm.parameterName.trim();
+    displayedParameters.value[editingIndex.value] = {
+      values: processedValues
+    };
+    
+    // Clear error message and edit state
+    errorMessage.value = '';
+    cancelEdit();
+  } catch (error) {
+    console.error('Error saving edit:', error);
+    errorMessage.value = 'Failed to save changes. Please try again.';
   }
 }
 
 const addValue = () => {
-  values.value.push('')
+  editForm.values.push('');
 }
 
-const updateCookie = () => {
-  const parameters = savedParameters.value.map(item => item.parameter)
-  const values = savedParameters.value.map(item => item.values)
-  saveParameters(parameters, values)
+const removeValue = (idx) => {
+  editForm.values.splice(idx, 1);
 }
 
-onMounted(async () => {
-  try {
-    const res = await getParameters();
-    if (res.data && res.data.data && Array.isArray(res.data.data.parameters) && Array.isArray(res.data.data.values)) {
-      // Reconstruct savedParameters from cookie data
-      savedParameters.value = res.data.data.parameters.map((param, idx) => ({
-        parameter: param,
-        values: res.data.data.values[idx] || []
-      }));
-    }
-  } catch (e) {
-    // Optionally handle error
-  }
-})
+
 
 function getAll3WiseCombinations(params) {
   // params: [{ parameter: 'A', values: ['a1', 'a2'] }, ...]
@@ -306,30 +330,30 @@ function getAll3WiseCombinations(params) {
   return generate3WayCoveringArray(params);
 }
 
-const errorMessage = ref('')
-
 const handleGenerate = () => {
-  let errors = [];
-  if (savedParameters.value.length < 3) {
-    errors.push('At least 3 parameters are required to generate combinations.');
-  }
-  // Check for empty parameter names or values
-  savedParameters.value.forEach((param, idx) => {
-    if (!param.parameter || !param.parameter.trim()) {
-      errors.push(`Parameter name at position ${idx + 1} is required.`);
-    }
-    if (!param.values || param.values.length < 2) {
-      errors.push(`Parameter "${param.parameter || '(unnamed)'}" must have at least 2 values.`);
-    } else if (param.values.some(v => !v || !v.trim())) {
-      errors.push(`All values for parameter "${param.parameter || '(unnamed)'}" are required.`);
-    }
-  });
-  if (errors.length > 0) {
-    errorMessage.value = errors.join(' ');
+  if (displayedParameters.value.length < 3) {
+    errorMessage.value = 'At least 3 parameters are required to generate combinations.';
     return;
   }
-  errorMessage.value = '';
-  const combinations = getAll3WiseCombinations(savedParameters.value);
+
+  // Prepare data to save in cookie
+  const parameterData = displayedParameters.value.map((param, idx) => ({
+    name: selectedParameterNames.value[idx],
+    values: param.values
+  }));
+
+  // Save to cookie - expires in 7 days
+  const expirationDate = new Date();
+  expirationDate.setDate(expirationDate.getDate() + 7);
+  document.cookie = `savedParameters=${JSON.stringify(parameterData)}; expires=${expirationDate.toUTCString()}; path=/`;
+
+  // Convert displayedParameters to the format expected by getAll3WiseCombinations
+  const paramsWithNames = displayedParameters.value.map((param, idx) => ({
+    parameter: `Parameter ${idx + 1}`,
+    values: param.values
+  }));
+
+  const combinations = getAll3WiseCombinations(paramsWithNames);
   combinationStore.setCombinations(combinations);
   router.push({ name: 'ResultPage' });
 }
@@ -383,6 +407,159 @@ const handleGenerate = () => {
 .input:focus {
   border-color: #f7d3a6;
 }
+
+.input-text {
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+  color: #444;
+}
+
+.selected-values {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.selected-value {
+  padding: 10px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.selected-value:hover {
+  border-color: #f7d3a6;
+}
+
+.highlighted {
+  background: #ccc;
+}
+
+.parameter-display {
+  margin-bottom: 15px;
+  width: 100%;
+}
+
+.parameter-name {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.parameter-values {
+  color: #444;
+}
+
+.parameters-display {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.values-display {
+  width: 100%;
+  text-align: left;
+  /* padding: 0 20px; */
+}
+
+.value-row {
+  margin: 10px 0;
+  width: 100%;
+}
+
+.value-item {
+  font-size: 1.2rem;
+  padding: 10px;
+  color: #444;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.edit-form {
+  width: 100%;
+  padding: 15px;
+}
+
+.edit-input {
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+.edit-value-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.edit-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
+  gap: 10px;
+}
+
+.edit-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  color: #666;
+  font-size: 1.2rem;
+  transition: color 0.2s;
+}
+
+.edit-btn:hover {
+  color: #000;
+}
+
+.save-btn, .cancel-btn {
+  padding: 8px 15px;
+  border: 1px solid #aaa;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  margin-left: 10px;
+  transition: all 0.2s;
+}
+
+.save-btn:hover, .cancel-btn:hover {
+  background: #f7d3a6;
+}
+
+.add-btn {
+  padding: 8px 15px;
+  border: 1px solid #aaa;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-btn:hover {
+  background: #f7d3a6;
+}
+
+.delete-icon {
+  color: #ff0000;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.error-message {
+  color: #ff0000;
+  font-size: 1.2rem;
+  margin-top: 10px;
+  text-align: center;
+}
+
 .add-more-row {
   width: 100%;
   display: flex;
@@ -443,47 +620,7 @@ const handleGenerate = () => {
   background: #f7d3a6;
   transform: translateY(-1px);
 }
-.error {
-  border-color: #ff4444 !important;
-}
 
-.error-message {
-  color: #ff4444;
-  font-size: 0.9rem;
-  margin-top: 5px;
-  margin-bottom: 10px;
-  text-align: left;
-  display: block;
-}
-
-.icon-btn {
-  background: none;
-  border: none;
-  padding: 2px;
-  cursor: pointer;
-  vertical-align: middle;
-  display: inline-flex;
-  align-items: center;
-  transition: background 0.2s;
-  margin-left: 28px;
-}
-.icon-btn:hover {
-  background: #f7d3a6;
-  border-radius: 50%;
-}
-.plus-btn {
-  margin-left: 6px;
-  padding: 2px;
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.plus-btn:hover {
-  background: #f7d3a6;
-  border-radius: 50%;
-}
 </style>
 
 <style>
