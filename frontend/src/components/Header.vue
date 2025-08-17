@@ -24,8 +24,7 @@ function goBack() {
   left: 0;
   width: 100%;
   padding: 16px 24px;
-  background: #fffbe6;
-  border-bottom: 1px solid #f0e1b0;
+  background: #f7d3a6; /* match result page / app background */
   z-index: 1000;
 }
 .back-btn {

@@ -71,17 +71,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue'
+import { ref, reactive } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { useCombinationStore } from '../store/combinationStore'
+import { useParameterStore } from '../store/parameterStore'
 import { getParameterValues } from '../config/api'
+import { generate3WiseCombinations } from '../services/combinationService'
 
 const selectedParameter = ref('')
 const router = useRouter()
 const combinationStore = useCombinationStore()
-const displayedParameters = ref([])
+const parameterStore = useParameterStore()
+const { displayedParameters, selectedParameterNames } = storeToRefs(parameterStore)
 const currentValues = ref([])
-const selectedParameterNames = ref([])
 const errorMessage = ref('')
 const editingIndex = ref(null)
 const editForm = reactive({
@@ -89,10 +92,11 @@ const editForm = reactive({
   values: []
 })
 
+// Backend parameter id mapping (could be externalized if needed)
 const parameterMapping = {
-  'total_vendor': 1,    // ID for total vendor parameter
-  'cuisene_type': 2,    // ID for cuisine type parameter
-  'main_ingredient': 3  // ID for main ingredient parameter
+  total_vendor: 1,
+  cuisene_type: 2,
+  main_ingredient: 3
 }
 
 const handleParameterChange = async () => {
@@ -123,7 +127,7 @@ const handleParameterChange = async () => {
   }
 }
 
-const handleSubmit = async () => {
+const handleSubmit = () => {
   if (!selectedParameter.value || currentValues.value.length === 0) {
     errorMessage.value = 'Please select a parameter and ensure it has values.';
     return;
@@ -136,7 +140,7 @@ const handleSubmit = async () => {
     .join(' ');
 
   // Check if this parameter has already been saved
-  if (selectedParameterNames.value.includes(displayName)) {
+  if (Array.isArray(selectedParameterNames.value) && selectedParameterNames.value.includes(displayName)) {
     errorMessage.value = `${displayName} has already been saved. Please select a different parameter.`;
     return;
   }
@@ -145,10 +149,7 @@ const handleSubmit = async () => {
   errorMessage.value = '';
 
   // Store both parameter name and values
-  displayedParameters.value.push({
-    values: [...currentValues.value]
-  });
-  selectedParameterNames.value.push(displayName);
+  parameterStore.addParameter([...currentValues.value], displayName)
 }
 
 const startEdit = (idx) => {
@@ -184,7 +185,8 @@ const saveEdit = () => {
   }
 
   // Handle validation for total vendor (numbers) vs other parameters (strings)
-  const isNumber = selectedParameterNames.value[editingIndex.value].toLowerCase().includes('vendor');
+  const paramNameForType = selectedParameterNames.value?.[editingIndex.value]
+  const isNumber = typeof paramNameForType === 'string' && paramNameForType.toLowerCase().includes('vendor');
   const validValues = editForm.values.filter(v => {
     if (isNumber) {
       const num = parseFloat(v);
@@ -224,111 +226,12 @@ const saveEdit = () => {
   }
 }
 
-const addValue = () => {
-  editForm.values.push('');
-}
-
-const removeValue = (idx) => {
-  editForm.values.splice(idx, 1);
-}
+const addValue = () => editForm.values.push('')
+const removeValue = (idx) => editForm.values.splice(idx, 1)
 
 
 
-function getAll3WiseCombinations(params) {
-  // params: [{ parameter: 'A', values: ['a1', 'a2'] }, ...]
-  if (params.length < 3) return [];
-
-  // If exactly 3 parameters, generate all possible combinations
-  if (params.length === 3) {
-    const testCases = [];
-    for (const v1 of params[0].values) {
-      for (const v2 of params[1].values) {
-        for (const v3 of params[2].values) {
-          testCases.push({
-            [params[0].parameter]: v1,
-            [params[1].parameter]: v2,
-            [params[2].parameter]: v3
-          });
-        }
-      }
-    }
-    return testCases;
-  }
-
-  // For 4+ parameters, use a greedy algorithm to generate 3-way covering array
-  function generate3WayCoveringArray(parameters) {
-    // Generate all possible 3-way combinations that need to be covered
-    const requiredCombos = new Set();
-    const paramIndices = [...Array(parameters.length).keys()];
-    
-    // Get all combinations of 3 parameters
-    const triplets = getCombinations(paramIndices, 3);
-    
-    // Generate all required 3-way value combinations
-    for (const [i, j, k] of triplets) {
-      for (const v1 of parameters[i].values) {
-        for (const v2 of parameters[j].values) {
-          for (const v3 of parameters[k].values) {
-            requiredCombos.add(`${i}:${v1}|${j}:${v2}|${k}:${v3}`);
-          }
-        }
-      }
-    }
-    
-    // Greedily build test cases
-    const testCases = [];
-    let attempts = 0;
-    const maxAttempts = 1000; // Prevent infinite loops
-    
-    while (requiredCombos.size > 0 && attempts < maxAttempts) {
-      attempts++;
-      
-      // Generate a candidate test case
-      const candidate = {};
-      for (const param of parameters) {
-        candidate[param.parameter] = param.values[Math.floor(Math.random() * param.values.length)];
-      }
-      
-      // Check which 3-way combinations this candidate covers
-      let covered = [];
-      for (const [i, j, k] of triplets) {
-        const key = `${i}:${candidate[parameters[i].parameter]}|${j}:${candidate[parameters[j].parameter]}|${k}:${candidate[parameters[k].parameter]}`;
-        if (requiredCombos.has(key)) {
-          covered.push(key);
-        }
-      }
-      
-      // If this candidate covers any new combinations, add it
-      if (covered.length > 0) {
-        testCases.push(candidate);
-        for (const key of covered) {
-          requiredCombos.delete(key);
-        }
-      }
-    }
-    
-    return testCases;
-  }
-  
-  function getCombinations(arr, k) {
-    const results = [];
-    function helper(start, combo) {
-      if (combo.length === k) {
-        results.push([...combo]);
-        return;
-      }
-      for (let i = start; i < arr.length; i++) {
-        combo.push(arr[i]);
-        helper(i + 1, combo);
-        combo.pop();
-      }
-    }
-    helper(0, []);
-    return results;
-  }
-  
-  return generate3WayCoveringArray(params);
-}
+// Removed cookie restoration; state now lives in Pinia store only.
 
 const handleGenerate = () => {
   if (displayedParameters.value.length < 3) {
@@ -336,24 +239,13 @@ const handleGenerate = () => {
     return;
   }
 
-  // Prepare data to save in cookie
-  const parameterData = displayedParameters.value.map((param, idx) => ({
-    name: selectedParameterNames.value[idx],
-    values: param.values
-  }));
-
-  // Save to cookie - expires in 7 days
-  const expirationDate = new Date();
-  expirationDate.setDate(expirationDate.getDate() + 7);
-  document.cookie = `savedParameters=${JSON.stringify(parameterData)}; expires=${expirationDate.toUTCString()}; path=/`;
-
   // Convert displayedParameters to the format expected by getAll3WiseCombinations
   const paramsWithNames = displayedParameters.value.map((param, idx) => ({
-    parameter: `Parameter ${idx + 1}`,
+    parameter: selectedParameterNames.value[idx],
     values: param.values
   }));
 
-  const combinations = getAll3WiseCombinations(paramsWithNames);
+  const combinations = generate3WiseCombinations(paramsWithNames);
   combinationStore.setCombinations(combinations);
   router.push({ name: 'ResultPage' });
 }

@@ -22,17 +22,103 @@ export class ExportService {
   }
 
   /**
-   * Export combinations data to text format
+   * Export combinations data to PDF format
    * @param {Array} combinations - Array of combination objects
+   * @param {Array} groupedCombinations - Grouped combinations data
    * @param {string} filename - Name of the file to save
    */
-  static exportToText(combinations, filename = 'combinations.txt') {
+  static async exportToPDF(combinations, groupedCombinations, filename = 'combinations.pdf') {
     if (!combinations || combinations.length === 0) {
       throw new Error('No data to export');
     }
 
-    const textContent = this.generateTextContent(combinations);
-    this.downloadFile(textContent, filename, 'text/plain');
+    try {
+      // Dynamic import of jsPDF and autoTable
+      const { jsPDF } = await import('jspdf');
+      await import('jspdf-autotable');
+      
+      const doc = new jsPDF();
+      
+      // Add title
+      doc.setFontSize(18);
+      doc.setFont(undefined, 'bold');
+      doc.text('Food Festival Vendor Distribution', 105, 20, { align: 'center' });
+      
+      // Add summary
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Total combinations: ${combinations.length}`, 20, 35);
+      
+      let yPosition = 50;
+      
+      // Process each group
+      groupedCombinations.forEach((group, groupIndex) => {
+        // Check if we need a new page
+        if (yPosition > 250) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        
+        // Add group header
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.text(`Total Vendor = ${group.totalVendor}`, 20, yPosition);
+        yPosition += 10;
+        
+        // Prepare table data with merged cells handling
+        const tableHeaders = ['Number of vendor', 'Cuisine Type', 'Main Ingredient', 'No. of vendor per ingredient'];
+        const tableData = [];
+        
+        group.cuisineGroups.forEach(cuisineGroup => {
+          cuisineGroup.combinations.forEach((combo, index) => {
+            const row = [
+              index === 0 ? combo['Number of vendor'] : '', // Only show on first row of each cuisine
+              index === 0 ? combo['Cuisene Type'] : '', // Only show on first row of each cuisine
+              combo['Main Ingredient'],
+              combo['No. of vendor per ingredient']
+            ];
+            tableData.push(row);
+          });
+        });
+        
+        // Add table using autoTable
+        doc.autoTable({
+          head: [tableHeaders],
+          body: tableData,
+          startY: yPosition,
+          theme: 'grid',
+          headStyles: {
+            fillColor: [247, 211, 166], // #f7d3a6 in RGB
+            textColor: [0, 0, 0],
+            fontStyle: 'bold'
+          },
+          bodyStyles: {
+            fillColor: [255, 255, 255],
+            textColor: [0, 0, 0]
+          },
+          alternateRowStyles: {
+            fillColor: [248, 248, 248]
+          },
+          tableLineColor: [0, 0, 0],
+          tableLineWidth: 0.5,
+          margin: { left: 20, right: 20 },
+          didParseCell: function (data) {
+            // Handle merged cells styling for both Number of vendor and Cuisine Type columns
+            if ((data.column.index === 0 || data.column.index === 1) && data.cell.raw !== '') {
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fillColor = [249, 249, 249];
+            }
+          }
+        });
+        
+        yPosition = doc.lastAutoTable.finalY + 15;
+      });
+      
+      // Save the PDF
+      doc.save(filename);
+    } catch (error) {
+      throw new Error(`Failed to export PDF: ${error.message}`);
+    }
   }
 
   /**
@@ -76,35 +162,6 @@ export class ExportService {
     });
     
     return csvRows.join('\n');
-  }
-
-  /**
-   * Generate text content from combinations data
-   * @param {Array} combinations - Array of combination objects
-   * @returns {string} Formatted text content
-   */
-  static generateTextContent(combinations) {
-    if (combinations.length === 0) return 'No combinations generated.';
-    
-    const headers = Object.keys(combinations[0]);
-    const textLines = [];
-    
-    // Add title
-    textLines.push('3-Wise Combinations Report');
-    textLines.push(`Total combinations: ${combinations.length}`);
-    textLines.push('');
-    
-    // Add header row
-    textLines.push(headers.join('\t'));
-    textLines.push('-'.repeat(headers.join('\t').length));
-    
-    // Add data rows
-    combinations.forEach((combination, index) => {
-      const row = headers.map(header => combination[header]);
-      textLines.push(row.join('\t'));
-    });
-    
-    return textLines.join('\n');
   }
 
   /**

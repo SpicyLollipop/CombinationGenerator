@@ -1,23 +1,44 @@
 <template>
   <Header />
   <div class="container">
-    <h2>3-Wise Combinations</h2>
-    <div v-if="combinations.length > 0" style="margin-bottom: 12px; font-size: 1.1rem;">
+    <h2>Food Festival Vendor Distribution</h2>
+    <div v-if="groupedCombinations.length > 0" style="margin-bottom: 12px; font-size: 1.1rem;">
       Total combinations: <b>{{ combinations.length }}</b>
     </div>
     
-    <table v-if="combinations.length > 0" ref="tableRef">
-      <thead>
-        <tr>
-          <th v-for="header in headers" :key="header">{{ header }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="(row, idx) in combinations" :key="idx">
-          <td v-for="header in headers" :key="header">{{ row[header] }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <div v-if="groupedCombinations.length > 0" class="results-container">
+      <div v-for="(group, groupIndex) in groupedCombinations" :key="groupIndex" class="vendor-group">
+        <div class="total-vendor-header">
+          Total Vendor = {{ group.totalVendor }}
+        </div>
+        
+        <table class="result-table">
+          <thead>
+            <tr>
+              <th>Number of vendor</th>
+              <th>Cuisene Type</th>
+              <th>Main Ingredient</th>
+              <th>No. of vendor per ingredient</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template v-for="(cuisineGroup, cuisineIndex) in group.cuisineGroups" :key="cuisineIndex">
+              <tr v-for="(combination, combIndex) in cuisineGroup.combinations" :key="combIndex">
+                <td v-if="combIndex === 0" :rowspan="cuisineGroup.combinations.length" class="merged-cell">
+                  {{ combination['Number of vendor'] }}
+                </td>
+                <td v-if="combIndex === 0" :rowspan="cuisineGroup.combinations.length" class="merged-cell">
+                  {{ combination['Cuisene Type'] }}
+                </td>
+                <td>{{ combination['Main Ingredient'] }}</td>
+                <td>{{ combination['No. of vendor per ingredient'] }}</td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
     <div v-else>No combinations generated.</div>
 
     <!-- Export Buttons -->
@@ -34,15 +55,14 @@
           </svg>
           Export CSV
         </button>
-        <button @click="handleExportText" class="export-btn text-btn">
+        <button @click="handleExportPDF" class="export-btn pdf-btn">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
             <path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2Z" stroke="currentColor" stroke-width="2"/>
             <path d="M14 2V8H20" stroke="currentColor" stroke-width="2"/>
-            <path d="M16 13H8" stroke="currentColor" stroke-width="2"/>
-            <path d="M16 17H8" stroke="currentColor" stroke-width="2"/>
-            <path d="M10 9H8" stroke="currentColor" stroke-width="2"/>
+            <path d="M8 16H16" stroke="currentColor" stroke-width="2"/>
+            <path d="M8 12H16" stroke="currentColor" stroke-width="2"/>
           </svg>
-          Export Text
+          Export PDF
         </button>
         <button @click="handleExportImage" class="export-btn image-btn">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -67,13 +87,31 @@ import Header from '../components/Header.vue'
 
 const combinationStore = useCombinationStore()
 const combinations = computed(() => combinationStore.combinations)
-const headers = computed(() => {
-  if (combinations.value.length === 0) return []
-  return Object.keys(combinations.value[0])
+
+// Group combinations by total vendor count, then by cuisine type
+const groupedCombinations = computed(() => {
+  const perTotalVendor = new Map()
+  combinations.value.forEach(combo => {
+    const key = combo['Total Vendor']
+    if (!perTotalVendor.has(key)) perTotalVendor.set(key, [])
+    perTotalVendor.get(key).push(combo)
+  })
+
+  return Array.from(perTotalVendor.entries())
+    .map(([totalVendor, items]) => {
+      const cuisines = new Map()
+      items.forEach(c => {
+        const cuisineKey = c['Cuisene Type']
+        if (!cuisines.has(cuisineKey)) cuisines.set(cuisineKey, [])
+        cuisines.get(cuisineKey).push(c)
+      })
+      const cuisineGroups = Array.from(cuisines.entries()).map(([cuisineType, combos]) => ({ cuisineType, combinations: combos }))
+      return { totalVendor, combinations: items, cuisineGroups }
+    })
+    .sort((a, b) => a.totalVendor - b.totalVendor)
 })
 
 // Export functionality
-const tableRef = ref(null)
 const exportMessage = ref('')
 const exportMessageType = ref('success')
 
@@ -90,12 +128,12 @@ const handleExportCSV = () => {
 }
 
 /**
- * Handle text export with error handling
+ * Handle PDF export with error handling
  */
-const handleExportText = () => {
+const handleExportPDF = async () => {
   try {
-    ExportService.exportToText(combinations.value, '3way-combinations.txt')
-    showExportMessage('Text file exported successfully!', 'success')
+    await ExportService.exportToPDF(combinations.value, groupedCombinations.value, 'food-festival-combinations.pdf')
+    showExportMessage('PDF exported successfully!', 'success')
   } catch (error) {
     showExportMessage(`Export failed: ${error.message}`, 'error')
   }
@@ -106,10 +144,11 @@ const handleExportText = () => {
  */
 const handleExportImage = async () => {
   try {
-    if (!tableRef.value) {
-      throw new Error('Table element not found')
+    const resultsContainer = document.querySelector('.results-container')
+    if (!resultsContainer) {
+      throw new Error('Results container not found')
     }
-    await ExportService.exportToImage(tableRef.value, '3way-combinations.png')
+    await ExportService.exportToImage(resultsContainer, 'food-festival-combinations.png')
     showExportMessage('Image exported successfully!', 'success')
   } catch (error) {
     showExportMessage(`Export failed: ${error.message}`, 'error')
@@ -140,6 +179,51 @@ const showExportMessage = (message, type) => {
   align-items: center;
   justify-content: flex-start;
   padding-top: 40px;
+}
+
+.results-container {
+  width: 100%;
+  max-width: 800px;
+}
+
+.vendor-group {
+  margin-bottom: 30px;
+}
+
+.total-vendor-header {
+  font-size: 1.3rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #333;
+  text-align: left;
+}
+
+.result-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.result-table th,
+.result-table td {
+  border: 1px solid #000;
+  padding: 8px 12px;
+  text-align: center;
+}
+
+.result-table th {
+  background-color: #f7d3a6;
+  font-weight: bold;
+}
+
+.result-table td {
+  background-color: #fff;
+}
+
+.merged-cell {
+  vertical-align: middle;
+  font-weight: bold;
+  background-color: #f9f9f9 !important;
 }
 
 .export-section {
@@ -188,8 +272,8 @@ const showExportMessage = (message, type) => {
   border-color: #4CAF50;
 }
 
-.text-btn:hover {
-  border-color: #2196F3;
+.pdf-btn:hover {
+  border-color: #f44336;
 }
 
 .image-btn:hover {
