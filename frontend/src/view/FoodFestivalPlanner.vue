@@ -13,6 +13,7 @@
             <option value="total_vendor">Total Vendor</option>
             <option value="cuisene_type">Cuisene Type</option>
             <option value="main_ingredient">Main Ingredient</option>
+            <option value="others">Others</option>
           </select>
         </form>
 
@@ -37,12 +38,25 @@
                     class="input edit-input"
                     placeholder="Value"
                   />
-                  <button @click="removeValue(vIdx)" class="icon-btn" v-if="editForm.values.length > 1">
+                  <button 
+                    @click="removeValue(vIdx)" 
+                    class="icon-btn" 
+                    v-if="editForm.values.length > 1"
+                    :disabled="editForm.values.length <= 2"
+                    :class="{ 'disabled': editForm.values.length <= 2 }"
+                  >
                     <span class="delete-icon">×</span>
                   </button>
                 </div>
                 <div class="edit-actions">
-                  <button @click="addValue" class="add-btn">+ Add Value</button>
+                  <button 
+                    @click="addValue" 
+                    class="add-btn" 
+                    :disabled="editForm.values.length >= 10"
+                    :class="{ 'disabled': editForm.values.length >= 10 }"
+                  >
+                    + Add Value
+                  </button>
                   <div>
                     <button @click="saveEdit" class="save-btn">Save</button>
                     <button @click="cancelEdit" class="cancel-btn">Cancel</button>
@@ -96,13 +110,21 @@ const editForm = reactive({
 const parameterMapping = {
   total_vendor: 1,
   cuisene_type: 2,
-  main_ingredient: 3
+  main_ingredient: 3,
+  others: 4 // Hardcoded, not in database
 }
 
 const handleParameterChange = async () => {
   try {
     // Clear any existing error message when parameter changes
     errorMessage.value = '';
+    
+    // Handle "others" parameter with hardcoded values
+    if (selectedParameter.value === 'others') {
+      currentValues.value = ['value1', 'value2', 'value3'];
+      console.log('Using hardcoded values for Others:', currentValues.value);
+      return;
+    }
     
     const paramId = parameterMapping[selectedParameter.value];
     const response = await getParameterValues(paramId);
@@ -179,14 +201,33 @@ const saveEdit = () => {
   }
 
   // Validate values
-  if (!editForm.values || editForm.values.length === 0) {
-    errorMessage.value = 'At least one value is required';
+  if (!editForm.values || editForm.values.length < 2) {
+    errorMessage.value = 'At least 2 values are required per parameter';
+    return;
+  }
+
+  // Check maximum values limit
+  if (editForm.values.length > 10) {
+    errorMessage.value = 'Maximum 10 values allowed per parameter';
     return;
   }
 
   // Handle validation for total vendor (numbers) vs other parameters (strings)
   const paramNameForType = selectedParameterNames.value?.[editingIndex.value]
   const isNumber = typeof paramNameForType === 'string' && paramNameForType.toLowerCase().includes('vendor');
+  
+  // Check for empty fields first
+  const emptyFields = editForm.values.filter((v, index) => {
+    if (typeof v !== 'string' && typeof v !== 'number') return true;
+    return v.toString().trim().length === 0;
+  });
+
+  if (emptyFields.length > 0) {
+    errorMessage.value = 'Please fill in all empty fields before saving';
+    return;
+  }
+
+  // Validate field types and content
   const validValues = editForm.values.filter(v => {
     if (isNumber) {
       const num = parseFloat(v);
@@ -198,7 +239,7 @@ const saveEdit = () => {
   if (validValues.length !== editForm.values.length) {
     errorMessage.value = isNumber ? 
       'All values must be valid numbers' : 
-      'All values must not be empty';
+      'All values must contain valid text';
     return;
   }
 
@@ -226,8 +267,18 @@ const saveEdit = () => {
   }
 }
 
-const addValue = () => editForm.values.push('')
-const removeValue = (idx) => editForm.values.splice(idx, 1)
+const addValue = () => {
+  if (editForm.values.length >= 10) {
+    return;
+  }
+  editForm.values.push('');
+}
+const removeValue = (idx) => {
+  if (editForm.values.length <= 2) {
+    return; // Don't remove if only 2 values left
+  }
+  editForm.values.splice(idx, 1);
+}
 
 
 
@@ -438,11 +489,44 @@ const handleGenerate = () => {
   background: #f7d3a6;
 }
 
+.add-btn.disabled,
+.add-btn:disabled {
+  background: #f0f0f0;
+  color: #999;
+  cursor: not-allowed;
+  border-color: #ddd;
+}
+
+.add-btn.disabled:hover,
+.add-btn:disabled:hover {
+  background: #f0f0f0;
+  transform: none;
+}
+
 .delete-icon {
   color: #ff0000;
   font-size: 1.5rem;
   font-weight: bold;
   cursor: pointer;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.icon-btn.disabled,
+.icon-btn:disabled {
+  cursor: not-allowed;
+}
+
+.icon-btn.disabled .delete-icon,
+.icon-btn:disabled .delete-icon {
+  color: #ccc;
+  cursor: not-allowed;
 }
 
 .error-message {
