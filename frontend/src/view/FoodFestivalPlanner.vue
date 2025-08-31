@@ -67,9 +67,14 @@
             <template v-else>
               <div class="value-item">
                 {{ selectedParameterNames[idx] }}: {{ param.values.join(', ') }}
-                <button @click="startEdit(idx)" class="edit-btn">
-                  <span class="edit-icon">✎</span>
-                </button>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <button @click="startEdit(idx)" class="edit-btn" title="Edit">
+                    <span class="edit-icon">✎</span>
+                  </button>
+                  <button @click="removeParameter(idx)" class="icon-btn" title="Delete" style="margin-left: 4px;">
+                    <span class="delete-icon">×</span>
+                  </button>
+                </div>
               </div>
             </template>
           </div>
@@ -173,6 +178,20 @@ const handleSubmit = () => {
   // Store both parameter name and values
   parameterStore.addParameter([...currentValues.value], displayName)
 }
+
+// Remove a parameter by index
+const removeParameter = (idx) => {
+  parameterStore.removeParameter(idx);
+  // Optionally clear error or edit state if the deleted index was being edited
+  if (editingIndex.value === idx) {
+    cancelEdit();
+  }
+  // If editingIndex is after the removed index, decrement it
+  if (editingIndex.value !== null && editingIndex.value > idx) {
+    editingIndex.value--;
+  }
+  errorMessage.value = '';
+};
 
 const startEdit = (idx) => {
   editingIndex.value = idx;

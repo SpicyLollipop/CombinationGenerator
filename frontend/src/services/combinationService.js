@@ -24,31 +24,34 @@ export function generate3WiseCombinations(params) {
     const totalVendorNum = parseInt(totalVendors)
     if (isNaN(totalVendorNum) || totalVendorNum <= 0) return
 
-    // Randomly distribute vendors among cuisine types
-    const vendorsPerCuisine = {}
-    let remainingVendors = totalVendorNum
-
-    // Cuisine distribution
-    const cuisineDistribution = []
-    for (let i = 0; i < cuisineTypes.length - 1; i++) {
-      const minPercentage = 0.15
-      const maxPercentage = Math.min(0.6, remainingVendors / totalVendorNum)
-      const randomPercentage = Math.random() * (maxPercentage - minPercentage) + minPercentage
-      const vendorCount = Math.floor(totalVendorNum * randomPercentage)
-      cuisineDistribution.push(Math.max(1, vendorCount))
-      remainingVendors -= cuisineDistribution[i]
+    // Randomly distribute vendors among cuisine types, but ensure max difference is at most 10
+    const n = cuisineTypes.length;
+    let cuisineDistribution = Array(n).fill(1); // Start with 1 vendor per cuisine
+    let remaining = totalVendorNum - n;
+    // Randomly assign the rest, but never let any cuisine get more than 10 above any other
+    while (remaining > 0) {
+      // Find all indices that are currently at the minimum
+      let min = Math.min(...cuisineDistribution);
+      let max = Math.max(...cuisineDistribution);
+      // Only allow adding to those not already at max
+      let candidates = cuisineDistribution
+        .map((val, idx) => ({ val, idx }))
+        .filter(obj => (max - obj.val) < 10)
+        .map(obj => obj.idx);
+      // Pick a random candidate
+      const idx = candidates[Math.floor(Math.random() * candidates.length)];
+      cuisineDistribution[idx]++;
+      remaining--;
     }
-    cuisineDistribution.push(Math.max(1, remainingVendors))
-
-    // Shuffle cuisine allocation
+    // Shuffle for randomness
     for (let i = cuisineDistribution.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[cuisineDistribution[i], cuisineDistribution[j]] = [cuisineDistribution[j], cuisineDistribution[i]]
+      const j = Math.floor(Math.random() * (i + 1));
+      [cuisineDistribution[i], cuisineDistribution[j]] = [cuisineDistribution[j], cuisineDistribution[i]];
     }
-
     // Assign cuisine counts
+    const vendorsPerCuisine = {};
     cuisineTypes.forEach((cuisine, index) => {
-      vendorsPerCuisine[cuisine] = cuisineDistribution[index]
+      vendorsPerCuisine[cuisine] = cuisineDistribution[index];
     })
 
     // Generate ingredient distributions per cuisine
