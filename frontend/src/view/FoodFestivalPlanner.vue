@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <h1 class="title">Welcome to Food Festival Planner</h1>
-    <div style="display: flex; gap: 40px; justify-content: center; width: 100%;">
+    <div class="main-content">
       <div class="form-box">
         <form @submit.prevent="handleSubmit">
           <label class="label">Event:</label>
@@ -66,8 +66,10 @@
             </template>
             <template v-else>
               <div class="value-item">
-                {{ selectedParameterNames[idx] }}: {{ param.values.join(', ') }}
-                <div style="display: flex; gap: 8px; align-items: center;">
+                <div class="value-content">
+                  {{ selectedParameterNames[idx] }}: {{ param.values.join(', ') }}
+                </div>
+                <div class="action-buttons">
                   <button @click="startEdit(idx)" class="edit-btn" title="Edit">
                     <span class="edit-icon">✎</span>
                   </button>
@@ -323,12 +325,31 @@ const handleGenerate = () => {
 
 <style scoped>
 .container {
-  min-height: 80vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
 }
+
+.title {
+  font-size: 2.5rem;
+  margin-bottom: 30px;
+  text-align: center;
+  color: #333;
+}
+
+.main-content {
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+  width: 100%;
+  max-width: 1200px;
+  flex-wrap: wrap;
+}
+
 .form-box {
   background: #fff;
   padding: 40px 50px 60px 50px;
@@ -344,7 +365,9 @@ const handleGenerate = () => {
   transition: all 0.3s ease;
   text-align: left;
   font-size: 1.2rem;
+  box-sizing: border-box;
 }
+
 .label {
   font-size: 2rem;
   font-weight: bold;
@@ -440,6 +463,19 @@ const handleGenerate = () => {
   align-items: center;
   justify-content: space-between;
   width: 100%;
+}
+
+.value-content {
+  flex: 1;
+  word-break: break-word;
+  margin-right: 10px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .edit-form {
@@ -614,6 +650,156 @@ const handleGenerate = () => {
 .generate:hover {
   background: #f7d3a6;
   transform: translateY(-1px);
+}
+
+/* Mobile Responsive Styles */
+@media screen and (max-width: 768px) {
+  .container {
+    padding: 10px;
+    min-height: 100vh;
+  }
+  
+  .title {
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    padding: 0 10px;
+  }
+  
+  .main-content {
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .form-box {
+    width: 100%;
+    max-width: 350px;
+    padding: 20px 25px 30px 25px;
+    margin-bottom: 20px;
+  }
+  
+  .label {
+    font-size: 1.5rem;
+    margin-top: 12px;
+    margin-bottom: 6px;
+  }
+  
+  .input, .edit-input {
+    font-size: 1rem;
+    padding: 12px;
+  }
+  
+  .input-text {
+    font-size: 1rem;
+    margin-bottom: 15px;
+  }
+  
+  .value-item {
+    font-size: 1rem;
+    padding: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .value-content {
+    margin-right: 0;
+    width: 100%;
+  }
+  
+  .action-buttons {
+    align-self: flex-end;
+    gap: 12px;
+  }
+  
+  .edit-btn, .icon-btn {
+    padding: 8px;
+    min-width: 40px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .edit-icon, .delete-icon {
+    font-size: 1.2rem;
+  }
+  
+  .edit-actions {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+  
+  .edit-actions > div {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  
+  .edit-value-row {
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
+  
+  .save, .generate, .add-btn, .save-btn, .cancel-btn {
+    font-size: 1rem;
+    padding: 12px 20px;
+    width: auto;
+    min-width: 120px;
+  }
+  
+  .generate {
+    width: 100%;
+    max-width: 200px;
+  }
+  
+  .error-message {
+    font-size: 1rem;
+    padding: 0 10px;
+    text-align: center;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .title {
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+  }
+  
+  .form-box {
+    padding: 15px 20px 25px 20px;
+    max-width: 100%;
+    margin: 0 10px 15px 10px;
+  }
+  
+  .label {
+    font-size: 1.3rem;
+  }
+  
+  .input, .edit-input {
+    font-size: 0.9rem;
+    padding: 10px;
+  }
+  
+  .value-item {
+    font-size: 0.9rem;
+    padding: 10px;
+  }
+  
+  .edit-btn, .icon-btn {
+    min-width: 36px;
+    min-height: 36px;
+    padding: 6px;
+  }
+  
+  .save, .generate, .add-btn, .save-btn, .cancel-btn {
+    font-size: 0.9rem;
+    padding: 10px 15px;
+    min-width: 100px;
+  }
 }
 
 </style>
