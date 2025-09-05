@@ -345,9 +345,9 @@ const handleGenerate = () => {
   display: flex;
   gap: 40px;
   justify-content: center;
-  width: 100%;
+  width: 80%;
   max-width: 1200px;
-  flex-wrap: wrap;
+  align-items: flex-start;
 }
 
 .form-box {
@@ -366,6 +366,7 @@ const handleGenerate = () => {
   text-align: left;
   font-size: 1.2rem;
   box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .label {
@@ -653,6 +654,14 @@ const handleGenerate = () => {
 }
 
 /* Mobile Responsive Styles */
+@media screen and (max-width: 900px) {
+  .main-content {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+}
+
 @media screen and (max-width: 768px) {
   .container {
     padding: 10px;
