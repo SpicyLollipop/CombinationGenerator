@@ -66,7 +66,8 @@ export class ExportService {
         yPosition += 10;
         
         // Prepare table data with merged cells handling
-        const tableHeaders = ['Number of vendor', 'Cuisine Type', 'Main Ingredient', 'No. of vendor per ingredient'];
+        const tableHeaders = ['Number of vendor', 'Cuisine Type', 'Main Ingredient', 
+          'No. of vendor per ingredient'];
         const tableData = [];
         
         group.cuisineGroups.forEach(cuisineGroup => {

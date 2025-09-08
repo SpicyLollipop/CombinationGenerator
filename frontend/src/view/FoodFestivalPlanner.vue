@@ -294,6 +294,7 @@ const addValue = () => {
   }
   editForm.values.push('');
 }
+
 const removeValue = (idx) => {
   if (editForm.values.length <= 2) {
     return; // Don't remove if only 2 values left
@@ -301,10 +302,7 @@ const removeValue = (idx) => {
   editForm.values.splice(idx, 1);
 }
 
-
-
 // Removed cookie restoration; state now lives in Pinia store only.
-
 const handleGenerate = () => {
   if (displayedParameters.value.length < 3) {
     errorMessage.value = 'At least 3 parameters are required to generate combinations.';

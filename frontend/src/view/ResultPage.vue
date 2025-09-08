@@ -132,7 +132,8 @@ const handleExportCSV = () => {
  */
 const handleExportPDF = async () => {
   try {
-    await ExportService.exportToPDF(combinations.value, groupedCombinations.value, 'food-festival-combinations.pdf')
+    await ExportService.exportToPDF(combinations.value, groupedCombinations.value, 
+        'food-festival-combinations.pdf')
     showExportMessage('PDF exported successfully!', 'success')
   } catch (error) {
     showExportMessage(`Export failed: ${error.message}`, 'error')

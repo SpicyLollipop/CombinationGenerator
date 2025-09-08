@@ -30,5 +30,6 @@ export const useParameterStore = defineStore('parameterStore', () => {
     selectedParameterNames.value.splice(index, 1)
   }
 
-  return { displayedParameters, selectedParameterNames, setParameters, addParameter, updateParameter, clearAll, removeParameter }
+  return { displayedParameters, selectedParameterNames, setParameters, addParameter, updateParameter, 
+    clearAll, removeParameter }
 })
