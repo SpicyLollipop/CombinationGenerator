@@ -63,7 +63,7 @@ export function generate3WiseCombinations(params) {
       const ingredientDistribution = []
       for (let i = 0; i < ingredients.length - 1; i++) {
         const maxForThisIngredient = Math.max(1, Math.floor(remainingCuisineVendors * 0.7))
-        const minForThisIngredient = Math.max(1, Math.floor(remainingCuisineVendors * 0.1))
+        const minForThisIngredient = Math.max(1, Math.floor(remainingCuisineVendors * 0.2))
         const randomCount = Math.floor(Math.random() * (maxForThisIngredient - minForThisIngredient + 1)) + 
           minForThisIngredient
         const actualCount = Math.min(randomCount, remainingCuisineVendors - (ingredients.length - i - 1))
